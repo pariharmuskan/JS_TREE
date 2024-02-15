@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.16/themes/default/style.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.16/jstree.min.js"></script>
+<div>
+    
+    <h2 id="">Js Tree</h2>
+    <div class="row mb-4 g-2">
+      @*   <div class="col-md-3">
+            <label for="dropNode" class="form-label">Select Parent Node</label>
+            <select id="dropNode" class="form-control"></select>
+        </div> *@
+        @*  <div class="col-md-3">
+            <label for="entNode" class="form-label">Enter Node Name</label>
+            <input type="text" id="entNode" class="form-control" />
+        </div>  *@
+        <div class="col-md-4 col-sm-8 col-xs-8">
+            <button type="button" id="createParentNodeBtn" class="btn btn-success btn-sm"><i class="glyphicon glyphicon-asterisk"></i> Create Parent Node</button>
+            <button type="button" id="rename" class="btn btn-warning btn-sm"><i class="glyphicon glyphicon-pencil"></i> Rename Node</button>
+
+@*             <button type="button" class="btn btn-warning btn-sm" onclick="rename_node();"><i class="glyphicon glyphicon-pencil"></i> Rename</button>
+ *@            <button type="button" class="btn btn-danger btn-sm" onclick="demo_delete();"><i class="glyphicon glyphicon-remove"></i>Delete</button>
+        </div>
+       @*  <div class="col-md-3 offset-1">
+            <label for="sea" class="form-label">Search</label>
+            <input id="sea" type="text" class="form-control" />
+        </div> *@
+    </div>
+    <div id="dynamic" class="border rounded-3"></div>
+
+    <script>
+        
+        $(document).ready(function () {
+            function createParentNode() {
+                var parentNodeName = prompt("Enter :");
+                if (parentNodeName) {
+                    $('#dynamic').jstree().create_node(null, { text: parentNodeName }, "last", function (newNode) {
+                        
+                        console.log("Parent node:", newNode);
+                    }, true);
+                }
+            }
+            function renameNode() {
+                //use to seolect node
+                var selectedNode = $('#dynamic').jstree().get_selected(true)[0];
+                if (selectedNode) {
+                    var newNodeName = prompt("Enter the new name for the node:", selectedNode.text);
+                    if (newNodeName) {
+                        selectedNode.text = newNodeName;
+                        $('#dynamic').jstree().rename_node(selectedNode, newNodeName);
+                    }
+                } else {
+                    alert("Please select a node to rename.");
+                }
+            }
+            // $('#dynamic').on('click', '.jstree-anchor', function () {
+            //     var originalText = $(this).text().trim();
+            //     var inputField = $('<input type="text" class="rename-input" value="' + originalText + '">');
+            //     $(this).html(inputField);
+            //     inputField.focus();
+
+            //     inputField.on('blur', function () {
+            //         var newText = $(this).val().trim();
+            //         if (newText !== '') {
+            //             $(this).parent().text(newText);
+            //             $('#dynamic').jstree().rename_node($(this).parent(), newText);
+            //         } else {
+            //             $(this).parent().text(originalText);
+            //         }
+            //     }).on('keyup', function (event) {
+            //         if (event.keyCode === 13) { // Enter key
+            //             $(this).trigger('blur');
+            //         }
+            //     });
+            // });
+
+
+            // $('#dynamicHeading').html("Dynamic Js Tree");
+
+            //initialize dropdown
+            // dropData();
+            // function dropData() {
+            //     $.ajax({
+            //         url: "/Home/show",
+            //         success: function (data) {
+            //             data.sort(sortFunction);                           
+            //             var nodeRows = `<option value="#">Make Root Node</option>`;
+            //             data.forEach(function (row) {
+            //                 nodeRows += `<option value=${row.id}>${row.text}</option>`;
+            //             })
+            //             $("#dropNode").html(nodeRows);
+            //         }
+            //     })
+            // }
+
+            //enter node
+            // $("#addNode").on("click", function () {
+            //     var newNode = $("#entNode").val();
+            //     var parentNode = $("#dropNode").val();
+            //     if (newNode != "") {
+            //         var d = $('#dynamic').jstree().create_node(parentNode, newNode);
+            //         if (!d) {
+            //             alert("Node name must be unique!");
+            //         }
+            //         else {
+            //             alert("Node added successfully!")
+            //             location.reload();
+            //         }
+            //     }
+            //     else {
+            //         alert("Node name must be required!");
+            //     }
+            // })
+
+            //search nodes
+            // var to = false;
+            // $('#sea').keyup(function () {
+            //     if (to) {
+            //         clearTimeout(to);
+            //     }
+            //     to = setTimeout(function () {
+            //         var v = $('#sea').val();
+            //         $('#dynamic').jstree().search(v);
+            //     }, 250);
+            // });
+
+            //initialize Js Tree
+            $('#dynamic').jstree({
+                "core": {
+                    'data': {
+                        'url': '/Home/view/',
+                    },
+                    "check_callback": true,
+                },
+                "plugins": [
+                    
+                    "contextmenu",
+                    "dnd",
+                    "search",
+                    "sort",
+                    "state",
+                    "unique",
+                    "wholerow",
+                ]
+            })
+                        
+            //create node
+            $('#dynamic').on("create_node.jstree", function (e, dataNodes) {
+                
+                $.ajax({
+                    url: "/Home/Add",
+                    type: "POST",
+                    data: dataNodes.node,
+                })
+            })
+            
+            //delete node
+            $('#dynamic').on("delete_node.jstree", function (e, dataNodes) {               
+                var childs = dataNodes.node.children;
+                if (childs.length) {
+                    
+                    alert(`You cannot delete ${dataNodes.node.text} record before deleting their child records!`)
+                    $("#dynamic").jstree().refresh();
+                }
+                else {
+                    $.ajax({
+                        url: "/Home/Delete",
+                        type: "POST",
+                        data: dataNodes.node,
+                    })
+                }
+            })
+            //rename node
+            $('#dynamic').on("rename_node.jstree", function (e, dataNodes) {
+                $.ajax({
+                    url: "/Home/Update",
+                    type: "POST",
+                    data: dataNodes.node,
+                })
+            })
+            //move node
+            $('#dynamic').on("move_node.jstree", function (e, dataNodes) {
+                $.ajax({
+                    url: "/Home/Update",
+                    type: "POST",
+                    data: dataNodes.node,
+                })                
+            })
+            //copy node
+            $('#dynamic').on("copy_node.jstree", function (e, dataNodes) {
+
+                $.ajax({
+                    url: "/Home/Add",
+                    type: "POST",
+                    data: dataNodes.node,
+                })
+            })
+            
+            //sort data
+            function sortFunction(a, b) {
+                if (a.text === b.text) {
+                    return 0;
+                }
+                else {
+                    return (a.text < b.text) ? -1 : 1;
+                }
+            }
+            $('#createParentNodeBtn').on('click', createParentNode);
+            $('#rename').on('click', renameNode);
+        })
+       
+
+    </script>
+
+</div>
+
